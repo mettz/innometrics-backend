@@ -17,7 +17,18 @@ class Role(Document):
     description = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
 
 
+class User(Document, UserMixin):
+    email = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
+    password = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
+    name = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
+    surname = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
+    active = BooleanField(default=True)
+    confirmed_at = DateTimeField()
+    roles = ListField(ReferenceField(Role), default=[])
+
+
 class Activity(Document):
+    user = ReferenceField(User)
     start_time = DateTimeField()
     end_time = DateTimeField
     executable_name = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
@@ -27,12 +38,4 @@ class Activity(Document):
     mac_address = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
 
 
-class User(Document, UserMixin):
-    email = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
-    password = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
-    name = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
-    surname = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
-    active = BooleanField(default=True)
-    confirmed_at = DateTimeField()
-    roles = ListField(ReferenceField(Role), default=[])
-    activities = ListField(Activity, default=[])
+

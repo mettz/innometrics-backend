@@ -1,6 +1,7 @@
 """
 API interface for Innometrics backend
 """
+import json
 from http import HTTPStatus
 
 import bcrypt
@@ -8,10 +9,12 @@ import flask
 from flask import Flask, make_response, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 
+from api.activity import add_activity
 from api.constants import *
 from config import config
 from db.models import User
 from logger import logger
+from utils import execute_function_in_parallel
 
 app = Flask(__name__)
 flask_config = config['FLASK']
@@ -133,6 +136,30 @@ def logout():
     return make_response(jsonify({MESSAGE_KEY: 'Success'}), HTTPStatus.OK)
 
 
+@app.route('/activity', methods=['POST'])
+@login_required
+def activity_add():
+    """
+    Add an activity
+    :return: flask.response
+    """
+    activity_data = flask.request.form.get(ACTIVITY_KEY, type=str)
+
+    try:
+        activity_data = json.loads(activity_data)
+    except Exception:
+        return make_response(jsonify({MESSAGE_KEY: 'Wrong format'}), HTTPStatus.BAD_REQUEST)
+    if ACTIVITIES_KEY in activity_data:
+        #  Add multiple activities
+        result = execute_function_in_parallel(add_activity, [(activity, current_user)
+                                                             for activity in activity_data.get(ACTIVITIES_KEY, [])])
+    else:
+        result = add_activity(activity_data, current_user)
+    if not result:
+        return make_response(jsonify({MESSAGE_KEY: 'Failed to create activity'}),
+                             HTTPStatus.INTERNAL_SERVER_ERROR)
+    return make_response(jsonify({MESSAGE_KEY: 'Success'}), HTTPStatus.OK)
+
+
 if __name__ == '__main__':
     app.run(port=flask_config['PORT'], threaded=True)
-
