@@ -30,7 +30,7 @@ class User(Document, UserMixin):
 class Activity(Document):
     user = ReferenceField(User)
     start_time = DateTimeField()
-    end_time = DateTimeField
+    end_time = DateTimeField()
     executable_name = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
     browser_url = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
     browser_title = StringField()

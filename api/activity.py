@@ -1,7 +1,9 @@
 """
 Manage user activities
 """
-from typing import Dict, Union
+from typing import Dict, Union, Optional, List
+
+from datetime import datetime
 
 from api.constants import *
 from db.models import User, Activity
@@ -36,11 +38,66 @@ def add_activity(activity: Dict, user: User) -> Union[int, None, Activity]:
     for value in data.values():
         if not value:
             return 0
+
     try:
-        activity = Activity(user=user, **data)
+        activity = Activity(user=user.to_dbref(), **data)
         activity.save()
         return activity
     except Exception as e:
         logger.exception(f'Failed to create Activity. Error: {e}')
 
     return None
+
+
+def delete_activity(activity_id: str) -> Optional[int]:
+    """
+    Delete an activity
+    :param activity_id: an id of the activity
+    :return: 1 if successful, None if failed, 0 if data is empty
+    """
+    if not activity_id:
+        return 0
+    activity = Activity.objects(id=activity_id).first()
+    if not activity:
+        return None
+
+    try:
+        activity.delete()
+    except Exception as e:
+        logger.exception(f'Failed to delete Activity. Error: {e}')
+
+    return 1
+
+
+def find_activities(user_id: str, start_time: datetime = None, end_time: datetime = None,
+                    items_to_return: int = 100, offset: int = 0) -> Union[int, None, List[Activity]]:
+    """
+    Find activities of a user
+    :param offset: an amount of activities to skip
+    :param items_to_return: an amount of activities to return
+    :param end_time: a filter for start time of activities
+    :param start_time: a filter for end time of activities
+    :param user_id: an id of the user
+    :return: 1 if successful, None if failed, 0 if data is empty
+    """
+    if not user_id:
+        return 0
+
+    params = {
+        USER_KEY: user_id,
+    }
+    if start_time:
+        params[f'{START_TIME_KEY}_gte'] = start_time
+    if end_time:
+        params[f'{END_TIME_KEY}_lt'] = end_time
+
+    try:
+        activities = Activity.objects(**params).skip(offset).limit(items_to_return)
+    except Exception as e:
+        logger.exception(f'Failed to fetch Activities. Error: {e}')
+        return None
+
+    if not activities:
+        return []
+
+    return activities
