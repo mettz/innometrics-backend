@@ -1,4 +1,4 @@
-# innometrics-backend
+# Innometrics-backend
 This is a backend implementation of innometrics. In order to run it, please, follow the steps.
 # Run depoyment.sh
 This script will make an environment for the project and install requirements. It will also print environment variables you would need to add to your system.
@@ -6,5 +6,5 @@ This script will make an environment for the project and install requirements. I
 # Activate virtual environment
 `source $INNOMETRICS_BACKEND_PATH/innometricsenv/bin/activate`
 
-# Run the Flask server
+# Run Flask server
 `python api/app.py`
