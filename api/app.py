@@ -95,6 +95,8 @@ def login():
                 description: User was not found
             401:
                 description: Credentials provided are incorrect
+            200:
+                description: User was logged in
     """
     try:
         email = flask.request.form.get(EMAIL_KEY, type=str)
@@ -149,6 +151,8 @@ def user_register():
                 description: Parameters are not correct
             409:
                 description: User with the email already exists
+            200:
+                description: User was logged registered
     """
     try:
         email = flask.request.form.get(EMAIL_KEY, type=str)
@@ -183,6 +187,9 @@ def user_delete():
     delete:
         summary: User deletion endpoint.
         description: Delete a user from DB.
+        responses:
+            200:
+                description: User was deleted
     """
     try:
         current_user.delete()
@@ -200,8 +207,11 @@ def logout():
     Logout a user
     ---
     post:
-       summary: User logout endpoint.
-       description: Logout a user.
+        summary: User logout endpoint.
+        description: Logout a user.
+        responses:
+            200:
+                description: User was logged out
     """
     try:
         logout_user()
@@ -224,50 +234,54 @@ def activity_add():
                 in: formData
                 required: true
                 description: json containing all specified parameters
-                type: json
+                type: string
             -   name: activities
-                in: activity_data
+                in: formData
                 required: false
-                type: list
                 description: List containing activity_data
+                type: array
+                items:
+                    type: string
             -   name: start_time
-                in: activity_data
+                in: formData
                 required: true
-                type: datetime
+                type: string
                 description: a start time of the activity
             -   name: end_time
-                in: activity_data
+                in: formData
                 required: true
-                type: datetime
+                type: string
                 description: an end time of the activity
             -   name: executable_name
-                in: activity_data
+                in: formData
                 required: true
                 type: string
                 description: a name of the current executable
             -   name: browser_url
-                in: activity_data
+                in: formData
                 required: false
                 type: string
                 description: a url opened during the activity
             -   name: browser_title
-                in: activity_data
+                in: formData
                 required: false
                 type: string
                 description: a title of the browsing window
             -   name: ip_address
-                in: activity_data
+                in: formData
                 required: true
                 type: string
                 description: an ip address of the user
             -   name: mac_address
-                in: activity_data
+                in: formData
                 required: true
                 type: string
                 description: an mac address of the user
         responses:
             400:
                 description: Parameters are not correct
+            200:
+                description: Activity was added
     """
     activity_data = flask.request.form.get(ACTIVITY_KEY, type=str)
 
@@ -308,6 +322,8 @@ def activity_delete():
                 description: Parameters are not correct
             404:
                 description: Activity with this id was not found
+            200:
+                description: Activity was deleted
     """
     activity_id = flask.request.form.get(ACTIVITY_ID_KEY, type=str)
 
@@ -331,7 +347,7 @@ def activity_find():
     """
     Find activities
     ---
-    delete:
+    get:
         summary: Find activities.
         description: Find activities of current user.
         parameters:
@@ -348,6 +364,8 @@ def activity_find():
         responses:
             404:
                 description: Activities were not found
+            200:
+                description: A list of activities was returned
     """
     offset = flask.request.form.get(OFFSET_KEY, type=int, default=0)
     amount_to_return = max(flask.request.form.get(AMOUNT_TO_RETURN_KEY, type=int, default=100), 1000)
@@ -371,5 +389,8 @@ with app.test_request_context():
         spec.add_path(view=view)
 
 if __name__ == '__main__':
+    # Save documentation
+    with open(os.path.join(INNOMETRICS_PATH, 'documentation.yaml'), 'w') as f:
+        f.write(spec.to_yaml())
 
     app.run(port=flask_config['PORT'], threaded=True)

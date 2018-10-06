@@ -1,0 +1,100 @@
+consumes: [multipart/form-data, application/x-www-form-urlencoded]
+definitions: {}
+info: {title: Innometrics backend API, version: 1.0.0}
+parameters: {}
+paths:
+  /login:
+    get:
+      description: Login a user with email.
+      parameters:
+      - {description: an email of the user, in: formData, name: email, required: true,
+        type: string}
+      - {description: a password of the user, in: formData, name: password, required: true,
+        type: string}
+      responses:
+        200: {description: User was logged in}
+        400: {description: Parameters are not correct}
+        401: {description: Credentials provided are incorrect}
+        404: {description: User was not found}
+      summary: Login endpoint.
+  /activity:
+    post:
+      description: Add an activity or multiple activities to the current user.
+      parameters:
+      - {description: json containing all specified parameters, in: formData, name: activity_data,
+        required: true, type: string}
+      - description: List containing activity_data
+        in: formData
+        items: {type: string}
+        name: activities
+        required: false
+        type: array
+      - {description: a start time of the activity, in: formData, name: start_time,
+        required: true, type: string}
+      - {description: an end time of the activity, in: formData, name: end_time, required: true,
+        type: string}
+      - {description: a name of the current executable, in: formData, name: executable_name,
+        required: true, type: string}
+      - {description: a url opened during the activity, in: formData, name: browser_url,
+        required: false, type: string}
+      - {description: a title of the browsing window, in: formData, name: browser_title,
+        required: false, type: string}
+      - {description: an ip address of the user, in: formData, name: ip_address, required: true,
+        type: string}
+      - {description: an mac address of the user, in: formData, name: mac_address,
+        required: true, type: string}
+      responses:
+        200: {description: Activity was added}
+        400: {description: Parameters are not correct}
+      summary: Add an activity.
+    delete:
+      description: Delete a specific activity from current user's history.
+      parameters:
+      - {description: an id of the activity, in: formData, name: activity_id, required: true,
+        type: integer}
+      responses:
+        200: {description: Activity was deleted}
+        400: {description: Parameters are not correct}
+        404: {description: Activity with this id was not found}
+      summary: Delete an activity.
+    get:
+      description: Find activities of current user.
+      parameters:
+      - {description: a number of activities to skip, in: formData, name: offset,
+        required: true, type: integer}
+      - {description: 'amount of activities to return, max is 1000', in: formData,
+        name: amount_to_return, required: true, type: integer}
+      responses:
+        200: {description: A list of activities was returned}
+        404: {description: Activities were not found}
+      summary: Find activities.
+  /logout:
+    post:
+      description: Logout a user.
+      responses:
+        200: {description: User was logged out}
+      summary: User logout endpoint.
+  /user:
+    delete:
+      description: Delete a user from DB.
+      responses:
+        200: {description: User was deleted}
+      summary: User deletion endpoint.
+    post:
+      description: Register a new user.
+      parameters:
+      - {description: an email of the user, in: formData, name: email, required: true,
+        type: string}
+      - {description: a name of the user, in: formData, name: name, required: true,
+        type: string}
+      - {description: a surname of the user, in: formData, name: surname, required: true,
+        type: string}
+      - {description: a password of the user, in: formData, name: password, required: true,
+        type: string}
+      responses:
+        200: {description: User was logged registered}
+        400: {description: Parameters are not correct}
+        409: {description: User with the email already exists}
+      summary: User registration endpoint.
+swagger: '2.0'
+tags: []
