@@ -8,3 +8,7 @@ This script will make an environment for the project and install requirements. I
 
 # Run the Flask server
 `python api/app.py`
+
+# REST API docs
+The documentation for rest api is stored in `documentation.yaml`.
+You can render it using <https://editor.swagger.io/>
