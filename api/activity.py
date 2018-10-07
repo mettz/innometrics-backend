@@ -4,18 +4,19 @@ Manage user activities
 from typing import Dict, Union, Optional, List
 
 from datetime import datetime
+from dateutil import parser
 
 from api.constants import *
-from db.models import User, Activity
+from db.models import Activity
 from logger import logger
 
 
-def add_activity(activity: Dict, user: User) -> Union[int, None, Activity]:
+def add_activity(activity: Dict, user: str) -> Union[int, None, str]:
     """
     Create new activity
-    :param user: activity's user
+    :param user: activity's user reference in DB
     :param activity: an dict containing activity attributes
-    :return: Acitiviy if successful, None if failed, 0 if data is empty
+    :return: Acitivity id if successful, None if failed, 0 if data is empty
     """
 
     start_time = activity.get(START_TIME_KEY)
@@ -35,14 +36,28 @@ def add_activity(activity: Dict, user: User) -> Union[int, None, Activity]:
         IP_ADDRESS_KEY: ip_address,
         MAC_ADDRESS_KEY: mac_address,
     }
+
     for value in data.values():
-        if not value:
+        if value is None:
+            return 0
+    try:
+        data[START_TIME_KEY] = parser.parse(start_time)
+        data[END_TIME_KEY] = parser.parse(end_time)
+    except Exception as e:
+        #  Maybe timestamp
+        try:
+            start_time = start_time[:10]
+            end_time = end_time[:10]
+            data[START_TIME_KEY] = datetime.fromtimestamp(int(start_time))
+            data[END_TIME_KEY] = datetime.fromtimestamp(int(end_time))
+        except Exception as e:
+            #  Can't recognise this datetime
             return 0
 
     try:
-        activity = Activity(user=user.to_dbref(), **data)
+        activity = Activity(user=user, **data)
         activity.save()
-        return activity
+        return str(activity.id)
     except Exception as e:
         logger.exception(f'Failed to create Activity. Error: {e}')
 

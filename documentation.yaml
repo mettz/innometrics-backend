@@ -44,7 +44,7 @@ paths:
       - {description: an mac address of the user, in: formData, name: mac_address,
         required: true, type: string}
       responses:
-        200: {description: Activity was added}
+        201: {description: Activity was added}
         400: {description: Parameters are not correct}
       summary: Add an activity.
     delete:

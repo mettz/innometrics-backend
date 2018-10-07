@@ -280,26 +280,37 @@ def activity_add():
         responses:
             400:
                 description: Parameters are not correct
-            200:
+            201:
                 description: Activity was added
     """
     activity_data = flask.request.form.get(ACTIVITY_KEY, type=str)
-
     try:
         activity_data = json.loads(activity_data)
     except Exception:
         return make_response(jsonify({MESSAGE_KEY: 'Wrong format'}), HTTPStatus.BAD_REQUEST)
     if ACTIVITIES_KEY in activity_data:
         #  Add multiple activities
-        result = execute_function_in_parallel(add_activity, [(activity, current_user)
-                                                             for activity in activity_data.get(ACTIVITIES_KEY, [])])
+        activities = [(activity, current_user.to_dbref()) for activity in activity_data.get(ACTIVITIES_KEY, [])]
+        all_result = execute_function_in_parallel(add_activity, activities)
+        result = 1
+        for part_result in all_result:
+            if not part_result:
+                result = part_result
+        if result:
+            result = all_result
+        else:
+            # Delete those activites that were added
+            for part_result in all_result:
+                if part_result:
+                    delete_activity(part_result)
     else:
         result = add_activity(activity_data, current_user)
+
     if not result:
         return make_response(jsonify({MESSAGE_KEY: 'Failed to create activity'}),
                              HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    return make_response(jsonify({MESSAGE_KEY: 'Success', ACTIVITY_ID_KEY: str(result.id)}), HTTPStatus.OK)
+    return make_response(jsonify({MESSAGE_KEY: 'Success', ACTIVITY_ID_KEY: result}), HTTPStatus.CREATED)
 
 
 @app.route('/activity', methods=['DELETE'])
