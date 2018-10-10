@@ -404,4 +404,4 @@ if __name__ == '__main__':
     with open(os.path.join(INNOMETRICS_PATH, 'documentation.yaml'), 'w') as f:
         f.write(spec.to_yaml())
 
-    app.run(port=flask_config['PORT'], threaded=True)
+    app.run(host='0.0.0.0', port=flask_config['PORT'], threaded=True)
