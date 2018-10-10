@@ -10,6 +10,7 @@ from apispec.ext.flask import FlaskPlugin
 from apispec.ext.marshmallow import MarshmallowPlugin
 from flask import Flask, make_response, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_cors import CORS, cross_origin
 from apispec import APISpec
 
 from api.activity import add_activity, delete_activity, find_activities
@@ -20,6 +21,9 @@ from logger import logger
 from utils import execute_function_in_parallel
 
 app = Flask(__name__)
+
+cors = CORS(app)
+app.config['CORS_HEADERS'] = 'Content-Type'
 
 flask_config = config['FLASK']
 app.secret_key = flask_config['SECRET_KEY']
@@ -70,6 +74,7 @@ def _check_password(plain_pass: str, encoded_pass: str) -> bool:
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@cross_origin()
 def login():
     """
     Login a user
@@ -180,6 +185,7 @@ def user_register():
 
 @app.route('/user', methods=['DELETE'])
 @login_required
+@cross_origin()
 def user_delete():
     """
     Delete a user
@@ -202,6 +208,7 @@ def user_delete():
 
 @app.route("/logout")
 @login_required
+@cross_origin()
 def logout():
     """
     Logout a user
@@ -222,6 +229,7 @@ def logout():
 
 @app.route('/activity', methods=['POST'])
 @login_required
+@cross_origin()
 def activity_add():
     """
     Add an activity
@@ -315,6 +323,7 @@ def activity_add():
 
 @app.route('/activity', methods=['DELETE'])
 @login_required
+@cross_origin()
 def activity_delete():
     """
     Delete an activity
@@ -354,6 +363,7 @@ def activity_delete():
 
 @app.route('/activity', methods=['GET'])
 @login_required
+@cross_origin()
 def activity_find():
     """
     Find activities
