@@ -24,3 +24,5 @@ ACTIVITY_ID_KEY = 'activity_id'
 USER_KEY = 'user'
 AMOUNT_TO_RETURN_KEY = 'amount_to_return'
 OFFSET_KEY = 'offset'
+TOKEN_KEY = 'token'
+

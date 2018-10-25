@@ -1,11 +1,14 @@
 """
 API interface for Innometrics backend
 """
+import datetime
 import json
 from http import HTTPStatus
+from typing import Optional
 
 import bcrypt
 import flask
+import jwt
 from apispec.ext.flask import FlaskPlugin
 from apispec.ext.marshmallow import MarshmallowPlugin
 from flask import Flask, make_response, jsonify
@@ -22,7 +25,6 @@ from utils import execute_function_in_parallel
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, origins=['http://localhost:8080'])
-
 
 flask_config = config['FLASK']
 app.secret_key = flask_config['SECRET_KEY']
@@ -42,13 +44,65 @@ spec = APISpec(
 
 
 @login_manager.user_loader
-def load_user(user_id):
+def load_user(user_id) -> Optional[User]:
     """
     Load a user from DB
     :param user_id: an id of the user
     :return: User instance or None if not found
     """
     return User.objects(id=user_id).first()
+
+
+def encode_auth_token(user_id) -> Optional[bytes]:
+    """
+    Generates the Auth Token
+    :return: string
+    """
+    try:
+        payload = {
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
+            'iat': datetime.datetime.utcnow(),
+            'sub': user_id
+        }
+        return jwt.encode(
+            payload,
+            flask_config.get('SECRET_KEY'),
+            algorithm='HS256'
+        )
+    except Exception as e:
+        logger.exception(f'Failed to encode token. Error {e}')
+        return None
+
+
+def decode_auth_token(auth_token) -> Optional[str]:
+    """
+    Decodes the auth token
+    :param auth_token:
+    :return: integer|string
+    """
+    try:
+        payload = jwt.decode(auth_token, flask_config.get('SECRET_KEY'))
+        return payload['sub']
+    except jwt.ExpiredSignatureError:
+        #  Signature expired. Please log in again.
+        return None
+    except jwt.InvalidTokenError:
+        #  Invalid token. Please log in again.
+        return None
+
+
+@login_manager.request_loader
+def load_user_from_request(request) -> Optional[User]:
+    token = request.headers.get('Authorization', default='').replace('Token ', '')
+    if not token:
+        return None
+
+    user_id = decode_auth_token(token)
+
+    if user_id:
+        return load_user(user_id)
+    else:
+        return None
 
 
 def _hash_password(password: str) -> str:
@@ -102,8 +156,9 @@ def login():
                 description: User was logged in
     """
     try:
-        email = flask.request.form.get(EMAIL_KEY, type=str)
-        password = flask.request.form.get(PASSWORD_KEY, type=str)
+        data = flask.request.json if flask.request.json else flask.request.form
+        email: str = data.get(EMAIL_KEY)
+        password: str = data.get(PASSWORD_KEY)
 
         if not (email and password):
             return make_response(jsonify({MESSAGE_KEY: 'Not enough data provided'}), HTTPStatus.BAD_REQUEST)
@@ -113,7 +168,8 @@ def login():
             return make_response(jsonify({MESSAGE_KEY: 'User not found'}), HTTPStatus.NOT_FOUND)
         if _check_password(password, existing_user.password):
             login_user(existing_user)
-            return make_response(jsonify({MESSAGE_KEY: 'Success'}), HTTPStatus.OK)
+            return make_response(jsonify({MESSAGE_KEY: 'Success',
+                                          TOKEN_KEY: encode_auth_token(str(existing_user.id)).decode()}), HTTPStatus.OK)
         return make_response(jsonify({MESSAGE_KEY: 'Failed to authenticate'}), HTTPStatus.UNAUTHORIZED)
     except Exception as e:
         logger.exception(f'Failed to login user. Error {e}')
@@ -158,10 +214,11 @@ def user_register():
                 description: User was logged registered
     """
     try:
-        email = flask.request.form.get(EMAIL_KEY, type=str)
-        password = flask.request.form.get(PASSWORD_KEY, type=str)
-        name = flask.request.form.get(NAME_KEY, type=str)
-        surname = flask.request.form.get(SURNAME_KEY, type=str)
+        data = flask.request.json if flask.request.json else flask.request.form
+        email: str = data.get(EMAIL_KEY)
+        password: str = data.get(PASSWORD_KEY)
+        name: str = data.get(NAME_KEY)
+        surname: str = data.get(SURNAME_KEY)
 
         if not (email and password and name and surname):
             return make_response(jsonify({MESSAGE_KEY: 'Not enough data provided'}), HTTPStatus.BAD_REQUEST)
@@ -286,11 +343,14 @@ def activity_add():
             201:
                 description: Activity was added
     """
-    activity_data = flask.request.form.get(ACTIVITY_KEY, type=str)
-    try:
-        activity_data = json.loads(activity_data)
-    except Exception:
-        return make_response(jsonify({MESSAGE_KEY: 'Wrong format'}), HTTPStatus.BAD_REQUEST)
+    data = flask.request.json if flask.request.json else flask.request.form
+    activity_data = data.get(ACTIVITY_KEY)
+    if not isinstance(activity_data, dict):
+        try:
+            activity_data = json.loads(activity_data)
+        except Exception:
+            return make_response(jsonify({MESSAGE_KEY: 'Wrong format'}), HTTPStatus.BAD_REQUEST)
+
     if ACTIVITIES_KEY in activity_data:
         #  Add multiple activities
         activities = [(activity, current_user.to_dbref()) for activity in activity_data.get(ACTIVITIES_KEY, [])]
@@ -339,7 +399,8 @@ def activity_delete():
             200:
                 description: Activity was deleted
     """
-    activity_id = flask.request.form.get(ACTIVITY_ID_KEY, type=str)
+    data = flask.request.json if flask.request.json else flask.request.form
+    activity_id: str = data.get(ACTIVITY_ID_KEY)
 
     if not activity_id:
         return make_response((jsonify({MESSAGE_KEY: 'Empty data'}, HTTPStatus.BAD_REQUEST)))
@@ -381,8 +442,9 @@ def activity_find():
             200:
                 description: A list of activities was returned
     """
-    offset = flask.request.form.get(OFFSET_KEY, type=int, default=0)
-    amount_to_return = max(flask.request.form.get(AMOUNT_TO_RETURN_KEY, type=int, default=100), 1000)
+    data = flask.request.json if flask.request.json else flask.request.form
+    offset: int = data.get(OFFSET_KEY, 0)
+    amount_to_return: int = max(data.get(AMOUNT_TO_RETURN_KEY, 100), 1000)
 
     activities = find_activities(current_user.id, offset=offset, items_to_return=amount_to_return)
     if activities is None:
