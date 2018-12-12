@@ -110,3 +110,5 @@ innometricsenv/
 config_production.ini
 
 logs/*
+
+config.py

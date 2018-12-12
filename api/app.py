@@ -24,7 +24,7 @@ from logger import logger
 from utils import execute_function_in_parallel
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True, origins=['http://localhost:8080'])
+CORS(app, supports_credentials=True, origins=['https://innometrics.guru'])
 
 flask_config = config['FLASK']
 app.secret_key = flask_config['SECRET_KEY']
@@ -60,7 +60,7 @@ def encode_auth_token(user_id) -> Optional[bytes]:
     """
     try:
         payload = {
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
+            'exp': datetime.datetime.utcnow() + datetime.timedelta(days=30),
             'iat': datetime.datetime.utcnow(),
             'sub': user_id
         }
@@ -367,7 +367,7 @@ def activity_add():
                 if part_result:
                     delete_activity(part_result)
     else:
-        result = add_activity(activity_data, current_user)
+        result = add_activity(activity_data, current_user.to_dbref())
 
     if not result:
         return make_response(jsonify({MESSAGE_KEY: 'Failed to create activity'}),
