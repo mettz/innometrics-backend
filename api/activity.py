@@ -16,30 +16,23 @@ def add_activity(activity: Dict, user: str) -> Union[int, None, str]:
     Create new activity
     :param user: activity's user reference in DB
     :param activity: an dict containing activity attributes
-    :return: Acitivity id if successful, None if failed, 0 if data is empty
+    :return: Activity id if successful, None if failed, 0 if data is empty
     """
+
+    ALL_FIELDS = [START_TIME_KEY, END_TIME_KEY, EXECUTABLE_KEY, BROWSER_TITLE_KEY, BROWSER_URL_KEY,
+                  IP_ADDRESS_KEY, MAC_ADDRESS_KEY, IDLE_ACTIVITY_KEY, ACTIVITY_TYPE_KEY]
+    COMPULSORY_FIELDS = [START_TIME_KEY, END_TIME_KEY, EXECUTABLE_KEY]
+    data = {}
+    for field in ALL_FIELDS:
+        data[field] = activity.get(field)
 
     start_time = activity.get(START_TIME_KEY)
     end_time = activity.get(END_TIME_KEY)
-    executable_name = activity.get(EXECUTABLE_KEY)
-    browser_url = activity.get(BROWSER_URL_KEY)
-    browser_title = activity.get(BROWSER_URL_KEY)
-    ip_address = activity.get(IP_ADDRESS_KEY)
-    mac_address = activity.get(MAC_ADDRESS_KEY)
 
-    data = {
-        START_TIME_KEY: start_time,
-        EXECUTABLE_KEY: executable_name,
-        END_TIME_KEY: end_time,
-        BROWSER_URL_KEY: browser_url,
-        BROWSER_TITLE_KEY: browser_title,
-        IP_ADDRESS_KEY: ip_address,
-        MAC_ADDRESS_KEY: mac_address,
-    }
-
-    for value in data.values():
-        if value is None:
+    for key, value in data.copy().items():
+        if value is None and key in COMPULSORY_FIELDS:
             return 0
+
     try:
         data[START_TIME_KEY] = parser.parse(start_time)
         data[END_TIME_KEY] = parser.parse(end_time)
@@ -85,9 +78,11 @@ def delete_activity(activity_id: str) -> Optional[int]:
 
 
 def find_activities(user_id: str, start_time: datetime = None, end_time: datetime = None,
-                    items_to_return: int = 100, offset: int = 0) -> Union[int, None, List[Activity]]:
+                    items_to_return: int = 100, offset: int = 0,
+                    filters: Dict = {}) -> Union[int, None, List[Activity]]:
     """
     Find activities of a user
+    :param filters: a dict with filter for data
     :param offset: an amount of activities to skip
     :param items_to_return: an amount of activities to return
     :param end_time: a filter for start time of activities
@@ -100,6 +95,7 @@ def find_activities(user_id: str, start_time: datetime = None, end_time: datetim
 
     params = {
         USER_KEY: user_id,
+        **filters,
     }
     if start_time:
         params[f'{START_TIME_KEY}_gte'] = start_time

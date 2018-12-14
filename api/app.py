@@ -163,7 +163,8 @@ def login():
         if not (email and password):
             return make_response(jsonify({MESSAGE_KEY: 'Not enough data provided'}), HTTPStatus.BAD_REQUEST)
 
-        existing_user = User.objects(email=email).first()
+        existing_user = User.objects(email=email.lower()).first()
+        existing_user = existing_user if existing_user else User.objects(email=email.lower()).first()
         if not existing_user:
             return make_response(jsonify({MESSAGE_KEY: 'User not found'}), HTTPStatus.NOT_FOUND)
         if _check_password(password, existing_user.password):
@@ -224,6 +225,8 @@ def user_register():
             return make_response(jsonify({MESSAGE_KEY: 'Not enough data provided'}), HTTPStatus.BAD_REQUEST)
 
         existing_user = User.objects(email=email).first()
+        existing_user = existing_user if existing_user else User.objects(email=email.lower()).first()
+        email = email.lower()
         if existing_user:
             return make_response(jsonify({MESSAGE_KEY: 'User already exists'}), HTTPStatus.CONFLICT)
 
@@ -290,7 +293,7 @@ def activity_add():
         summary: Add an activity.
         description: Add an activity or multiple activities to the current user.
         parameters:
-            -   name: activity_data
+            -   name: activity
                 in: formData
                 required: true
                 description: json containing all specified parameters
@@ -337,6 +340,16 @@ def activity_add():
                 required: true
                 type: string
                 description: an mac address of the user
+            -   name: idle_activity
+                in: formData
+                required: false
+                type: boolean
+                description: if activity is an idle one
+            -   name: activity_type
+                in: formData
+                required: false
+                type: string
+                description: a type of activity collected (os, eclipse tab and etc)
         responses:
             400:
                 description: Parameters are not correct
@@ -362,7 +375,7 @@ def activity_add():
         if result:
             result = all_result
         else:
-            # Delete those activites that were added
+            # Delete those activities that were added
             for part_result in all_result:
                 if part_result:
                     delete_activity(part_result)
@@ -427,26 +440,38 @@ def activity_find():
         description: Find activities of current user.
         parameters:
             -   name: offset
-                in: formData
+                in: args
                 required: true
                 type: integer
                 description: a number of activities to skip
             -   name: amount_to_return
-                in: formData
+                in: args
                 required: true
                 type: integer
                 description: amount of activities to return, max is 1000
+            -   name: filters
+                in: args
+                required: false
+                type: object
+                description: filters for activity, example {"activity_type"&#58; "os"}
         responses:
             404:
                 description: Activities were not found
             200:
                 description: A list of activities was returned
     """
-    data = flask.request.json if flask.request.json else flask.request.form
+    data = flask.request.args
     offset: int = data.get(OFFSET_KEY, 0)
     amount_to_return: int = max(data.get(AMOUNT_TO_RETURN_KEY, 100), 1000)
+    filters = data.get(FILTERS_KEY, {})
+    if not isinstance(filters, dict):
+        try:
+            filters = json.loads(filters)
+        except Exception:
+            return make_response(jsonify({MESSAGE_KEY: 'Wrong format'}), HTTPStatus.BAD_REQUEST)
 
-    activities = find_activities(current_user.id, offset=offset, items_to_return=amount_to_return)
+    activities = find_activities(current_user.id, offset=offset, items_to_return=amount_to_return,
+                                 filters=filters)
     if activities is None:
         return make_response(jsonify({MESSAGE_KEY: 'Failed to fetch activities'}),
                              HTTPStatus.INTERNAL_SERVER_ERROR)

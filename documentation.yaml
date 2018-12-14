@@ -21,7 +21,7 @@ paths:
     post:
       description: Add an activity or multiple activities to the current user.
       parameters:
-      - {description: json containing all specified parameters, in: formData, name: activity_data,
+      - {description: json containing all specified parameters, in: formData, name: activity,
         required: true, type: string}
       - description: List containing activity_data
         in: formData
@@ -43,6 +43,10 @@ paths:
         type: string}
       - {description: an mac address of the user, in: formData, name: mac_address,
         required: true, type: string}
+      - {description: if activity is an idle one, in: formData, name: idle_activity,
+        required: false, type: boolean}
+      - {description: 'a type of activity collected (os, eclipse tab and etc)', in: formData,
+        name: activity_type, required: false, type: string}
       responses:
         201: {description: Activity was added}
         400: {description: Parameters are not correct}
@@ -60,10 +64,12 @@ paths:
     get:
       description: Find activities of current user.
       parameters:
-      - {description: a number of activities to skip, in: formData, name: offset,
+      - {description: a number of activities to skip, in: args, name: offset, required: true,
+        type: integer}
+      - {description: 'amount of activities to return, max is 1000', in: args, name: amount_to_return,
         required: true, type: integer}
-      - {description: 'amount of activities to return, max is 1000', in: formData,
-        name: amount_to_return, required: true, type: integer}
+      - {description: 'filters for activity, example {"activity_type"&#58; "os"}',
+        in: args, name: filters, required: false, type: object}
       responses:
         200: {description: A list of activities was returned}
         404: {description: Activities were not found}

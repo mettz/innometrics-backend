@@ -6,7 +6,7 @@ from mongoengine import StringField, ListField, ReferenceField, DateTimeField, B
 
 from config import config
 
-DEFAULT_STRING_MAX_LENGTH = 255
+DEFAULT_STRING_MAX_LENGTH = 10000
 mongo_config = config['MONGO']
 
 connect(mongo_config['MONGO_DB'])
@@ -28,12 +28,14 @@ class User(Document, UserMixin):
 
 
 class Activity(Document):
+    idle_activity = BooleanField(default=False)
+    activity_type = StringField(max_length=DEFAULT_STRING_MAX_LENGTH, default='os')
     user = ReferenceField(User)
     start_time = DateTimeField()
     end_time = DateTimeField()
     executable_name = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
     browser_url = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
-    browser_title = StringField()
+    browser_title = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
     ip_address = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
     mac_address = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
 
