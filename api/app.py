@@ -454,9 +454,21 @@ def activity_find():
                 required: false
                 type: object
                 description: filters for activity, example {"activity_type"&#58; "os"}
+            -   name: start_time
+                in: args
+                required: false
+                type: string
+                description: minimum start time of an activity
+            -   name: end_time
+                in: args
+                required: false
+                type: string
+                description: maximum end time of an activity
         responses:
             404:
                 description: Activities were not found
+            400:
+                description: Wrong format
             200:
                 description: A list of activities was returned
     """
@@ -464,6 +476,9 @@ def activity_find():
     offset: int = int(data.get(OFFSET_KEY, 0))
     amount_to_return: int = min(int(data.get(AMOUNT_TO_RETURN_KEY, 100)), 1000)
     filters = data.get(FILTERS_KEY, {})
+    start_time = data.get(START_TIME_KEY, None)
+    end_time = data.get(END_TIME_KEY, None)
+
     if not isinstance(filters, dict):
         try:
             filters = json.loads(filters)
@@ -471,10 +486,13 @@ def activity_find():
             return make_response(jsonify({MESSAGE_KEY: 'Wrong format'}), HTTPStatus.BAD_REQUEST)
 
     activities = find_activities(current_user.id, offset=offset, items_to_return=amount_to_return,
-                                 filters=filters)
+                                 filters=filters, start_time=start_time, end_time=end_time)
     if activities is None:
         return make_response(jsonify({MESSAGE_KEY: 'Failed to fetch activities'}),
                              HTTPStatus.INTERNAL_SERVER_ERROR)
+    if activities == -1:
+        return make_response(jsonify({MESSAGE_KEY: 'Wrong format for filters'}),
+                             HTTPStatus.BAD_REQUEST)
 
     if not activities:
         return make_response(jsonify({MESSAGE_KEY: 'Activities of current user were not found'}),

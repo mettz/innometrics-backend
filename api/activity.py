@@ -5,6 +5,7 @@ from typing import Dict, Union, Optional, List
 
 from datetime import datetime
 from dateutil import parser
+from mongoengine.errors import InvalidQueryError, LookUpError as LookUpErrorMongo
 
 from api.constants import *
 from db.models import Activity
@@ -88,7 +89,7 @@ def find_activities(user_id: str, start_time: datetime = None, end_time: datetim
     :param end_time: a filter for start time of activities
     :param start_time: a filter for end time of activities
     :param user_id: an id of the user
-    :return: 1 if successful, None if failed, 0 if data is empty
+    :return: 1 if successful, None if failed, 0 if data is empty, -1 if request is bad
     """
     if not user_id:
         return 0
@@ -97,18 +98,21 @@ def find_activities(user_id: str, start_time: datetime = None, end_time: datetim
         USER_KEY: user_id,
         **filters,
     }
+
     if start_time:
-        params[f'{START_TIME_KEY}_gte'] = start_time
+        params[f'{START_TIME_KEY}__gte'] = start_time
     if end_time:
-        params[f'{END_TIME_KEY}_lt'] = end_time
+        params[f'{END_TIME_KEY}__lt'] = end_time
 
     try:
         activities = Activity.objects(**params).skip(offset).limit(items_to_return)
-    except Exception as e:
+        if not activities:
+            return []
+
+        return activities
+    except InvalidQueryError:
+        return -1
+    except (Exception, InvalidQueryError, LookUpErrorMongo) as e:
         logger.exception(f'Failed to fetch Activities. Error: {e}')
         return None
 
-    if not activities:
-        return []
-
-    return activities
