@@ -461,8 +461,8 @@ def activity_find():
                 description: A list of activities was returned
     """
     data = flask.request.args
-    offset: int = data.get(OFFSET_KEY, 0)
-    amount_to_return: int = max(data.get(AMOUNT_TO_RETURN_KEY, 100), 1000)
+    offset: int = int(data.get(OFFSET_KEY, 0))
+    amount_to_return: int = min(int(data.get(AMOUNT_TO_RETURN_KEY, 100)), 1000)
     filters = data.get(FILTERS_KEY, {})
     if not isinstance(filters, dict):
         try:
