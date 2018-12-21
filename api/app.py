@@ -164,7 +164,7 @@ def login():
             return make_response(jsonify({MESSAGE_KEY: 'Not enough data provided'}), HTTPStatus.BAD_REQUEST)
 
         existing_user = User.objects(email=email.lower()).first()
-        existing_user = existing_user if existing_user else User.objects(email=email.lower()).first()
+        existing_user = existing_user if existing_user else User.objects(email=email).first()
         if not existing_user:
             return make_response(jsonify({MESSAGE_KEY: 'User not found'}), HTTPStatus.NOT_FOUND)
         if _check_password(password, existing_user.password):
