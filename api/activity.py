@@ -108,6 +108,11 @@ def find_activities(user_id: str, start_time: datetime = None, end_time: datetim
         activities = Activity.objects(**params).skip(offset).limit(items_to_return)
         if not activities:
             return []
+        for activity in activities:
+            if activity[START_TIME_KEY] > activity[END_TIME_KEY]:
+                tmp = activity[START_TIME_KEY]
+                activity[START_TIME_KEY] = activity[END_TIME_KEY]
+                activity[END_TIME_KEY] = tmp
 
         return activities
     except InvalidQueryError:
