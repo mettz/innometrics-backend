@@ -27,6 +27,14 @@ class User(Document, UserMixin):
     roles = ListField(ReferenceField(Role), default=[])
 
 
+class Project(Document):
+    name = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
+    managers = ListField(ReferenceField(User), required=True)
+    users = ListField(ReferenceField(User), default=[])
+    invited_managers = ListField(ReferenceField(User), default=[])
+    invited_users = ListField(ReferenceField(User), default=[])
+
+
 class Activity(Document):
     idle_activity = BooleanField(default=False)
     activity_type = StringField(max_length=DEFAULT_STRING_MAX_LENGTH, default='os')

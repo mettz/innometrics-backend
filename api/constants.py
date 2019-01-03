@@ -28,4 +28,9 @@ AMOUNT_TO_RETURN_KEY = 'amount_to_return'
 OFFSET_KEY = 'offset'
 FILTERS_KEY = 'filters'
 TOKEN_KEY = 'token'
+PROJECT_KEY = 'project'
+USER_EMAIL_KEY = 'user_email'
+MANAGER_KEY = 'manager'
+
+
 

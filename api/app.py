@@ -18,6 +18,7 @@ from apispec import APISpec
 
 from api.activity import add_activity, delete_activity, find_activities
 from api.constants import *
+from api.project import create_new_project, invite_user, accept_invitation, get_project_activities
 from config import config
 from db.models import User
 from logger import logger
@@ -239,6 +240,193 @@ def user_register():
     except Exception as e:
         logger.exception(f'Failed to register user. Error {e}')
         return make_response(jsonify({MESSAGE_KEY: 'Something bad happened'}), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@app.route('/project', methods=['POST'])
+@login_required
+def new_project():
+    """
+    Create a new project
+    ---
+    post:
+        summary: Project creation endpoint.
+        description: Create a new project with user issuing request being a manager.
+        parameters:
+            -   in: formData
+                name: name
+                description: a name of the project
+                required: true
+                type: string
+        responses:
+            400:
+                description: Parameters are not correct
+            201:
+                description: Project was created
+    """
+    try:
+        data = flask.request.json if flask.request.json else flask.request.form
+        name: str = data.get(NAME_KEY)
+
+        if not name:
+            return make_response(jsonify({MESSAGE_KEY: 'Not enough data provided'}), HTTPStatus.BAD_REQUEST)
+
+        project = create_new_project(name, current_user.to_dbref())
+        if not project:
+            return make_response(jsonify({MESSAGE_KEY: 'Failed to create project'}), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        return make_response(jsonify({MESSAGE_KEY: 'Success', PROJECT_KEY: project}), HTTPStatus.CREATED)
+    except Exception as e:
+        logger.exception(f'Failed to register user. Error {e}')
+        return make_response(jsonify({MESSAGE_KEY: 'Something bad happened'}), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@app.route('/project/<string:project_id>/invite', methods=['POST'])
+@login_required
+def invite(project_id: str):
+    """
+    Invite a user to the project
+    ---
+    post:
+        summary: Project invitation endpoint.
+        description: Invite a user or add a manager to the project.
+        parameters:
+            -   in: formData
+                name: user_email
+                description: a email of user to be invited
+                required: true
+                type: string
+            -   in: formData
+                name: manager
+                description: True if adding a manager role
+                required: false
+                type: boolean
+        responses:
+            400:
+                description: Parameters are not correct
+            200:
+                description: User was invited
+    """
+    try:
+        data = flask.request.json if flask.request.json else flask.request.form
+        user_email: str = data.get(USER_EMAIL_KEY)
+        manager: bool = True if data.get(MANAGER_KEY, 'False') == 'True' else False
+
+        if not (project_id and user_email):
+            return make_response(jsonify({MESSAGE_KEY: 'Not enough data provided'}), HTTPStatus.BAD_REQUEST)
+
+        result = invite_user(project_id=project_id, user_email=user_email, invitor=current_user.to_dbref(),
+                             manager=manager)
+        if not result:
+            return make_response(jsonify({MESSAGE_KEY: 'Failed to send the invitation'}),
+                                 HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        return make_response(jsonify({MESSAGE_KEY: 'Success'}), HTTPStatus.OK)
+    except Exception as e:
+        logger.exception(f'Failed to register user. Error {e}')
+        return make_response(jsonify({MESSAGE_KEY: 'Something bad happened'}), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@app.route('/project/<string:project_id>/accept_invitation', methods=['POST'])
+@login_required
+def accept_invitation_endpoint(project_id: str):
+    """
+    Accept invitation to the project
+    ---
+    post:
+        summary: Project invitation endpoint.
+        description: Accept an invitation to the project.
+        responses:
+            400:
+                description: Parameters are not correct
+            200:
+                description: User was added to the project
+    """
+    try:
+        if not project_id:
+            return make_response(jsonify({MESSAGE_KEY: 'Not enough data provided'}), HTTPStatus.BAD_REQUEST)
+
+        result = accept_invitation(project_id=project_id, user=current_user.to_dbref())
+        if not result:
+            return make_response(jsonify({MESSAGE_KEY: 'Failed to accept'}), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        return make_response(jsonify({MESSAGE_KEY: 'Success'}), HTTPStatus.OK)
+    except Exception as e:
+        logger.exception(f'Failed to register user. Error {e}')
+        return make_response(jsonify({MESSAGE_KEY: 'Something bad happened'}), HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+@app.route('/project/<string:project_id>/activity', methods=['GET'])
+@login_required
+def project_activities(project_id: str):
+    """
+    Find project activities
+    ---
+    get:
+        summary: Find activities.
+        description: Find activities in specified project.
+        parameters:
+            -   name: offset
+                in: args
+                required: true
+                type: integer
+                description: a number of activities to skip
+            -   name: amount_to_return
+                in: args
+                required: true
+                type: integer
+                description: amount of activities to return, max is 1000
+            -   name: filters
+                in: args
+                required: false
+                type: object
+                description: filters for activity, example {"activity_type"&#58; "os"}
+            -   name: start_time
+                in: args
+                required: false
+                type: string
+                description: minimum start time of an activity
+            -   name: end_time
+                in: args
+                required: false
+                type: string
+                description: maximum end time of an activity
+        responses:
+            404:
+                description: Activities were not found
+            400:
+                description: Wrong format
+            200:
+                description: A list of activities was returned
+    """
+    data = flask.request.args
+    offset: int = int(data.get(OFFSET_KEY, 0))
+    amount_to_return: int = min(int(data.get(AMOUNT_TO_RETURN_KEY, 100)), 1000)
+    filters = data.get(FILTERS_KEY, {})
+    start_time = data.get(START_TIME_KEY, None)
+    end_time = data.get(END_TIME_KEY, None)
+
+    if not isinstance(filters, dict):
+        try:
+            filters = json.loads(filters)
+        except Exception:
+            return make_response(jsonify({MESSAGE_KEY: 'Wrong format'}), HTTPStatus.BAD_REQUEST)
+
+    activities = get_project_activities(project_id=project_id,
+                                        user=current_user.to_dbref(), offset=offset, items_to_return=amount_to_return,
+                                        filters=filters, start_time=start_time, end_time=end_time)
+    if activities is None:
+        return make_response(jsonify({MESSAGE_KEY: 'Failed to fetch activities'}),
+                             HTTPStatus.INTERNAL_SERVER_ERROR)
+    if activities == -1:
+        return make_response(jsonify({MESSAGE_KEY: 'Wrong format for filters'}),
+                             HTTPStatus.BAD_REQUEST)
+
+    if not activities:
+        return make_response(jsonify({MESSAGE_KEY: 'Activities of current user were not found'}),
+                             HTTPStatus.NOT_FOUND)
+    activities_list = [{k: str(v) for k, v in activity.to_mongo().items()} for activity in activities]
+
+    return make_response(jsonify({MESSAGE_KEY: 'Success', ACTIVITIES_KEY: activities_list}), HTTPStatus.OK)
 
 
 @app.route('/user', methods=['DELETE'])
@@ -485,7 +673,7 @@ def activity_find():
         except Exception:
             return make_response(jsonify({MESSAGE_KEY: 'Wrong format'}), HTTPStatus.BAD_REQUEST)
 
-    activities = find_activities(current_user.id, offset=offset, items_to_return=amount_to_return,
+    activities = find_activities([current_user.id], offset=offset, items_to_return=amount_to_return,
                                  filters=filters, start_time=start_time, end_time=end_time)
     if activities is None:
         return make_response(jsonify({MESSAGE_KEY: 'Failed to fetch activities'}),
@@ -503,7 +691,8 @@ def activity_find():
 
 
 with app.test_request_context():
-    views = [login, activity_add, activity_delete, activity_find, logout, user_delete, user_register]
+    views = [login, activity_add, activity_delete, activity_find, logout, user_delete, user_register,
+             project_activities, invite, accept_invitation_endpoint]
     for view in views:
         spec.add_path(view=view)
 

@@ -78,24 +78,24 @@ def delete_activity(activity_id: str) -> Optional[int]:
     return 1
 
 
-def find_activities(user_id: str, start_time: datetime = None, end_time: datetime = None,
+def find_activities(user_ids: List[str], start_time: datetime = None, end_time: datetime = None,
                     items_to_return: int = 100, offset: int = 0,
                     filters: Dict = {}) -> Union[int, None, List[Activity]]:
     """
-    Find activities of a user
+    Find activities of users
     :param filters: a dict with filter for data
     :param offset: an amount of activities to skip
     :param items_to_return: an amount of activities to return
     :param end_time: a filter for start time of activities
     :param start_time: a filter for end time of activities
-    :param user_id: an id of the user
+    :param user_ids: a list of user ids
     :return: 1 if successful, None if failed, 0 if data is empty, -1 if request is bad
     """
-    if not user_id:
+    if not user_ids:
         return 0
 
     params = {
-        USER_KEY: user_id,
+        f'{USER_KEY}__in': user_ids,
         **filters,
     }
 
