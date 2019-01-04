@@ -21,7 +21,8 @@ def add_activity(activity: Dict, user: str) -> Union[int, None, str]:
     """
 
     ALL_FIELDS = [START_TIME_KEY, END_TIME_KEY, EXECUTABLE_KEY, BROWSER_TITLE_KEY, BROWSER_URL_KEY,
-                  IP_ADDRESS_KEY, MAC_ADDRESS_KEY, IDLE_ACTIVITY_KEY, ACTIVITY_TYPE_KEY]
+                  IP_ADDRESS_KEY, MAC_ADDRESS_KEY, IDLE_ACTIVITY_KEY, ACTIVITY_TYPE_KEY,
+                  VALUE_KEY]
     COMPULSORY_FIELDS = [START_TIME_KEY, END_TIME_KEY, EXECUTABLE_KEY]
     data = {}
     for field in ALL_FIELDS:
