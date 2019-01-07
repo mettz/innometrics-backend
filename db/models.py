@@ -46,6 +46,7 @@ class Activity(Document):
     browser_title = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
     ip_address = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
     mac_address = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
+    value = StringField(max_length=DEFAULT_STRING_MAX_LENGTH)
 
 
 
