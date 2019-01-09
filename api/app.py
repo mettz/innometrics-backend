@@ -15,6 +15,7 @@ from flask import Flask, make_response, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_cors import CORS
 from apispec import APISpec
+from gevent.pywsgi import *
 
 from api.activity import add_activity, delete_activity, find_activities
 from api.constants import *
@@ -701,4 +702,11 @@ if __name__ == '__main__':
     with open(os.path.join(INNOMETRICS_PATH, 'documentation.yaml'), 'w') as f:
         f.write(spec.to_yaml())
 
-    app.run(host='0.0.0.0', port=flask_config['PORT'], threaded=True)
+    if not INNOMETRICS_PRODUCTION:
+        app.run(host='0.0.0.0', port=flask_config['PORT'], threaded=True)
+    else:
+        server = WSGIServer(('0.0.0.0', int(flask_config['PORT'])), app,
+                            keyfile=INNOMETRICS_PRODUCTION_KEYFILE,
+                            certfile=INNOMETRICS_PRODUCTION_CERTFILE)
+        server.serve_forever()
+
