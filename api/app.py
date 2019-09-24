@@ -291,6 +291,11 @@ def invite(project_id: str):
         summary: Project invitation endpoint.
         description: Invite a user or add a manager to the project.
         parameters:
+            -   name: project_id
+                in: path
+                required: true
+                type: integer
+                description: a project id
             -   in: formData
                 name: user_email
                 description: a email of user to be invited
@@ -336,6 +341,12 @@ def accept_invitation_endpoint(project_id: str):
     post:
         summary: Project invitation endpoint.
         description: Accept an invitation to the project.
+        parameters:
+            -   name: project_id
+                in: path
+                required: true
+                type: integer
+                description: a project id
         responses:
             400:
                 description: Parameters are not correct
@@ -366,28 +377,33 @@ def project_activities(project_id: str):
         summary: Find activities.
         description: Find activities in specified project.
         parameters:
+            -   name: project_id
+                in: path
+                required: true
+                type: integer
+                description: a project id
             -   name: offset
-                in: args
+                in: query
                 required: true
                 type: integer
                 description: a number of activities to skip
             -   name: amount_to_return
-                in: args
+                in: query
                 required: true
                 type: integer
                 description: amount of activities to return, max is 1000
             -   name: filters
-                in: args
+                in: query
                 required: false
-                type: object
+                type: string
                 description: filters for activity, example {"activity_type"&#58; "os"}
             -   name: start_time
-                in: args
+                in: query
                 required: false
                 type: string
                 description: minimum start time of an activity
             -   name: end_time
-                in: args
+                in: query
                 required: false
                 type: string
                 description: maximum end time of an activity
@@ -629,27 +645,27 @@ def activity_find():
         description: Find activities of current user.
         parameters:
             -   name: offset
-                in: args
+                in: query
                 required: true
                 type: integer
                 description: a number of activities to skip
             -   name: amount_to_return
-                in: args
+                in: query
                 required: true
                 type: integer
                 description: amount of activities to return, max is 1000
             -   name: filters
-                in: args
+                in: query
                 required: false
-                type: object
+                type: string
                 description: filters for activity, example {"activity_type"&#58; "os"}
             -   name: start_time
-                in: args
+                in: query
                 required: false
                 type: string
                 description: minimum start time of an activity
             -   name: end_time
-                in: args
+                in: query
                 required: false
                 type: string
                 description: maximum end time of an activity
