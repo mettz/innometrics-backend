@@ -64,15 +64,15 @@ paths:
     get:
       description: Find activities of current user.
       parameters:
-      - {description: a number of activities to skip, in: args, name: offset, required: true,
+      - {description: a number of activities to skip, in: query, name: offset, required: true,
         type: integer}
-      - {description: 'amount of activities to return, max is 1000', in: args, name: amount_to_return,
+      - {description: 'amount of activities to return, max is 1000', in: query, name: amount_to_return,
         required: true, type: integer}
-      - {description: 'filters for activity, example {"activity_type"&#58; "os"}',
-        in: args, name: filters, required: false, type: object}
-      - {description: minimum start time of an activity, in: args, name: start_time,
+      - {description: 'filters for activity, example {"activity_type": "os"}',
+        in: query, name: filters, required: false, type: string}
+      - {description: minimum start time of an activity, in: query, name: start_time,
         required: false, type: string}
-      - {description: maximum end time of an activity, in: args, name: end_time, required: false,
+      - {description: maximum end time of an activity, in: query, name: end_time, required: false,
         type: string}
       responses:
         200: {description: A list of activities was returned}
@@ -111,15 +111,16 @@ paths:
     get:
       description: Find activities in specified project.
       parameters:
-      - {description: a number of activities to skip, in: args, name: offset, required: true,
+      - {description: a project id, in: path, name: project_id, required: true, type: integer}
+      - {description: a number of activities to skip, in: query, name: offset, required: true,
         type: integer}
-      - {description: 'amount of activities to return, max is 1000', in: args, name: amount_to_return,
+      - {description: 'amount of activities to return, max is 1000', in: query, name: amount_to_return,
         required: true, type: integer}
       - {description: 'filters for activity, example {"activity_type"&#58; "os"}',
-        in: args, name: filters, required: false, type: object}
-      - {description: minimum start time of an activity, in: args, name: start_time,
+        in: query, name: filters, required: false, type: string}
+      - {description: minimum start time of an activity, in: query, name: start_time,
         required: false, type: string}
-      - {description: maximum end time of an activity, in: args, name: end_time, required: false,
+      - {description: maximum end time of an activity, in: query, name: end_time, required: false,
         type: string}
       responses:
         200: {description: A list of activities was returned}
@@ -130,6 +131,7 @@ paths:
     post:
       description: Invite a user or add a manager to the project.
       parameters:
+      - {description: a project id, in: path, name: project_id, required: true, type: integer}
       - {description: a email of user to be invited, in: formData, name: user_email,
         required: true, type: string}
       - {description: True if adding a manager role, in: formData, name: manager,
@@ -141,6 +143,8 @@ paths:
   /project/{project_id}/accept_invitation:
     post:
       description: Accept an invitation to the project.
+      parameters:
+        - {description: a project id, in: path, name: project_id, required: true, type: integer}
       responses:
         200: {description: User was added to the project}
         400: {description: Parameters are not correct}
