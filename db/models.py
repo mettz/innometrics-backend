@@ -5,9 +5,11 @@ from flask_login import UserMixin
 from mongoengine import StringField, ListField, ReferenceField, DateTimeField, BooleanField, Document, connect
 
 from config import config
+from logger import logger
 
 DEFAULT_STRING_MAX_LENGTH = 10000
 mongo_config = config['MONGO']
+logger.info(mongo_config)
 
 connect(mongo_config['MONGO_DB'])
 
