@@ -9,9 +9,8 @@ from logger import logger
 
 DEFAULT_STRING_MAX_LENGTH = 10000
 mongo_config = config['MONGO']
-logger.info(mongo_config['MONGO_DB'])
 
-connect(mongo_config['MONGO_DB'])
+connect(mongo_config['MONGO_DB'], host=mongo_config['MONGO_HOST'], port=int(mongo_config['MONGO_PORT']))
 
 
 class Role(Document):
